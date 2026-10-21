@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "NOVA Green Economy Foundation"
+description = "A premium eight-page website for NOVA Green Economy Foundation, sharing its mission, programmes, leadership, SDG impact, partners, and Sanity-powered news updates."
+version = "1.0.0"
+id = "artifacts/nova-green-foundation"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24841
+
+[services.development]
+run = "pnpm --filter @workspace/nova-green-foundation run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/nova-green-foundation", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/nova-green-foundation/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24841"
+BASE_PATH = "/"
