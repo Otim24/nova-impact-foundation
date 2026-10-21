@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { AnimatedNumber } from '@/components/animated-number';
 import { demoStories, fetchSanityStories, sanityIsConfigured, type Story } from '@/lib/sanity';
 import NotFound from '@/pages/not-found';
 import { ArrowDown, ArrowRight, ArrowUpRight, Menu, X, Sprout, Sun, Recycle, UsersRound, MapPin, Mail, Phone, CheckCircle2 } from 'lucide-react';
@@ -53,6 +54,96 @@ function updatePageMetadata(title: string, description: string) {
   updateTag('meta[name="twitter:description"]', 'name', 'twitter:description', description);
 }
 
+function ScrollMotionObserver() {
+  const [location] = useLocation();
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add('motion-ready');
+    const revealSelector = [
+      'main section:not(.hero-image) h1',
+      'main section:not(.hero-image) h2',
+      'main section:not(.hero-image) h3',
+      'main section:not(.hero-image) p:not(.eyebrow)',
+      'main section:not(.hero-image) article',
+      'main section:not(.hero-image) [data-scroll-reveal]',
+    ].join(',');
+    const observed = new WeakSet<HTMLElement>();
+    let sequence = 0;
+
+    const revealWithin = (container: ParentNode) => {
+      const targets: HTMLElement[] = [];
+      if (
+        container instanceof HTMLElement &&
+        container.matches(revealSelector)
+      ) {
+        targets.push(container);
+      }
+      targets.push(
+        ...container.querySelectorAll<HTMLElement>(revealSelector),
+      );
+
+      for (const target of targets) {
+        if (observed.has(target)) continue;
+        observed.add(target);
+        if (!target.dataset.scrollReveal) {
+          target.dataset.scrollReveal = sequence % 2 === 0 ? 'left' : 'right';
+        }
+        target.style.setProperty(
+          '--scroll-reveal-delay',
+          `${(sequence % 5) * 55}ms`,
+        );
+        sequence += 1;
+        if (prefersReducedMotion || !intersectionObserverAvailable) {
+          target.classList.add('is-visible');
+        } else {
+          intersectionObserver?.observe(target);
+        }
+      }
+    };
+
+    const prefersReducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+    const intersectionObserverAvailable =
+      'IntersectionObserver' in window;
+    const intersectionObserver = intersectionObserverAvailable
+      ? new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (!entry.isIntersecting) continue;
+              const target = entry.target as HTMLElement;
+              target.classList.add('is-visible');
+              intersectionObserver?.unobserve(target);
+            }
+          },
+          { threshold: 0.12, rootMargin: '0px 0px -7% 0px' },
+        )
+      : null;
+
+    const main = document.querySelector('main');
+    if (main) {
+      revealWithin(main);
+      const mutations = new MutationObserver((records) => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            if (node instanceof HTMLElement) revealWithin(node);
+          }
+        }
+      });
+      mutations.observe(main, { childList: true, subtree: true });
+      return () => {
+        mutations.disconnect();
+        intersectionObserver?.disconnect();
+      };
+    }
+
+    return () => intersectionObserver?.disconnect();
+  }, [location]);
+
+  return null;
+}
+
 function Brand({ light = false }: { light?: boolean }) {
   return <Link href="/" className={`flex items-center gap-3 ${light ? 'text-[#f5f0e5]' : 'text-[#183c2c]'}`} aria-label="Nova Green Economy Foundation home" data-testid="link-home">
     <span className={`grid h-10 w-10 place-items-center rounded-full ${light ? 'bg-[#f5f0e5] text-[#214b37]' : 'bg-[#214b37] text-[#f6f1e6]'}`}><span className="font-editorial text-[1.6rem] leading-none">N</span></span>
@@ -101,7 +192,7 @@ function ImageBand({ title, label }: { title: string; label: string }) {
 }
 
 function Metric({ value, label }: { value: string; label: string }) {
-  return <div className="border-l border-[#d8d2c4] pl-5"><p className="font-editorial text-4xl text-[#214b37] md:text-5xl">{value}</p><p className="mt-3 max-w-[12rem] text-sm leading-6 text-[#5f6d60]">{label}</p></div>;
+  return <div data-scroll-reveal className="border-l border-[#d8d2c4] pl-5"><p className="font-editorial text-4xl text-[#214b37] md:text-5xl"><AnimatedNumber value={value}/></p><p className="mt-3 max-w-[12rem] text-sm leading-6 text-[#5f6d60]">{label}</p></div>;
 }
 
 function Home() {
@@ -163,7 +254,7 @@ function PeopleContent() {
 
 function ImpactContent() {
  const sdgs=[['01','No poverty','Stronger livelihoods and local opportunity.'],['05','Gender equality','Women’s participation and leadership in climate action.'],['07','Clean energy','Practical access to clean and reliable energy.'],['08','Decent work','Skills and enterprise that support dignified work.'],['12','Responsible production','Circular approaches that reduce waste and create value.'],['13','Climate action','Community-led adaptation and resilience.'],['17','Partnerships','Shared action across communities and institutions.']];
- return <><section className="mx-auto max-w-[1440px] px-6 py-16 md:px-10 md:py-20 xl:px-[4.5rem]"><div className="grid gap-12 md:grid-cols-[.8fr_1.2fr]"><div><p className="eyebrow text-[#b46f49]">A transparent approach</p><h2 className="font-editorial mt-4 text-4xl leading-tight text-[#214b37] md:text-5xl">Impact is a practice, not a promise.</h2></div><div><p className="leading-7 text-[#5f6d60]">We are building a measurement approach that combines practical indicators with community feedback. The sample metrics below are illustrative for this website demo, not verified organisational results.</p><div className="mt-8 rounded-xl border border-[#d8d2c4] bg-[#efede5] p-5 text-sm leading-6 text-[#5a685d]"><span className="eyebrow text-[#b46f49]">Illustrative snapshot · 2024</span><div className="mt-4 grid grid-cols-2 gap-6 sm:grid-cols-4"><div><b className="font-editorial text-3xl text-[#214b37]">1,240+</b><p>people reached</p></div><div><b className="font-editorial text-3xl text-[#214b37]">18</b><p>community groups</p></div><div><b className="font-editorial text-3xl text-[#214b37]">7</b><p>districts</p></div><div><b className="font-editorial text-3xl text-[#214b37]">62%</b><p>women and girls</p></div></div></div></div></div></section><section className="bg-[#e9e5d9] py-16 md:py-20"><div className="mx-auto max-w-[1440px] px-6 md:px-10 xl:px-[4.5rem]"><p className="eyebrow text-[#b46f49]">Our contribution to the SDGs</p><h2 className="font-editorial mt-4 text-4xl text-[#214b37] md:text-5xl">Local work, global goals.</h2><div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{sdgs.map(s=><article key={s[0]} className="flex gap-5 border border-[#d1cdbf] bg-[#f5f2e9] p-5"><span className="font-mono text-sm text-[#b46f49]">SDG<br/><b className="text-3xl">{s[0]}</b></span><div><h3 className="font-editorial text-xl text-[#214b37]">{s[1]}</h3><p className="mt-2 text-sm leading-6 text-[#637065]">{s[2]}</p></div></article>)}</div></div></section><CTA/></>;
+  return <><section className="mx-auto max-w-[1440px] px-6 py-16 md:px-10 md:py-20 xl:px-[4.5rem]"><div className="grid gap-12 md:grid-cols-[.8fr_1.2fr]"><div><p className="eyebrow text-[#b46f49]">A transparent approach</p><h2 className="font-editorial mt-4 text-4xl leading-tight text-[#214b37] md:text-5xl">Impact is a practice, not a promise.</h2></div><div><p className="leading-7 text-[#5f6d60]">We are building a measurement approach that combines practical indicators with community feedback. The sample metrics below are illustrative for this website demo, not verified organisational results.</p><div className="mt-8 rounded-xl border border-[#d8d2c4] bg-[#efede5] p-5 text-sm leading-6 text-[#5a685d]"><span className="eyebrow text-[#b46f49]">Illustrative snapshot · 2024</span><div className="mt-4 grid grid-cols-2 gap-6 sm:grid-cols-4"><div data-scroll-reveal><b className="font-editorial text-3xl text-[#214b37]"><AnimatedNumber value="1,240+"/></b><p>people reached</p></div><div data-scroll-reveal><b className="font-editorial text-3xl text-[#214b37]"><AnimatedNumber value="18"/></b><p>community groups</p></div><div data-scroll-reveal><b className="font-editorial text-3xl text-[#214b37]"><AnimatedNumber value="7"/></b><p>districts</p></div><div data-scroll-reveal><b className="font-editorial text-3xl text-[#214b37]"><AnimatedNumber value="62%"/></b><p>women and girls</p></div></div></div></div></div></section><section className="bg-[#e9e5d9] py-16 md:py-20"><div className="mx-auto max-w-[1440px] px-6 md:px-10 xl:px-[4.5rem]"><p className="eyebrow text-[#b46f49]">Our contribution to the SDGs</p><h2 className="font-editorial mt-4 text-4xl text-[#214b37] md:text-5xl">Local work, global goals.</h2><div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{sdgs.map(s=><article key={s[0]} className="flex gap-5 border border-[#d1cdbf] bg-[#f5f2e9] p-5"><span className="font-mono text-sm text-[#b46f49]">SDG<br/><b className="text-3xl">{s[0]}</b></span><div><h3 className="font-editorial text-xl text-[#214b37]">{s[1]}</h3><p className="mt-2 text-sm leading-6 text-[#637065]">{s[2]}</p></div></article>)}</div></div></section><CTA/></>;
 }
 
 function PartnersContent() {
@@ -276,6 +367,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+          <ScrollMotionObserver />
           <Header />
           <Router />
           <Footer />
