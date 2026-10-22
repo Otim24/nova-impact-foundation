@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -7,6 +7,7 @@ import { AnimatedNumber } from '@/components/animated-number';
 import { demoStories, fetchSanityStories, sanityIsConfigured, type Story } from '@/lib/sanity';
 import NotFound from '@/pages/not-found';
 import { ArrowDown, ArrowRight, ArrowUpRight, Menu, X, Sprout, Sun, Recycle, UsersRound, MapPin, Mail, Phone, CheckCircle2 } from 'lucide-react';
+import { FaFacebookF, FaInstagram, FaLinkedinIn, FaYoutube } from 'react-icons/fa';
 import {
   Route,
   Switch,
@@ -24,6 +25,12 @@ const navItems = [
   { label: 'SDG impact', href: '/sdgs-impact' },
   { label: 'Partners', href: '/partners' },
   { label: 'News & stories', href: '/news-updates' },
+];
+const socialProfiles = [
+  { label: 'Facebook', Icon: FaFacebookF, href: import.meta.env.VITE_NOVA_FACEBOOK_URL?.trim() || '' },
+  { label: 'Instagram', Icon: FaInstagram, href: import.meta.env.VITE_NOVA_INSTAGRAM_URL?.trim() || '' },
+  { label: 'LinkedIn', Icon: FaLinkedinIn, href: import.meta.env.VITE_NOVA_LINKEDIN_URL?.trim() || '' },
+  { label: 'YouTube', Icon: FaYoutube, href: import.meta.env.VITE_NOVA_YOUTUBE_URL?.trim() || '' },
 ];
 const pageData: Record<string, { title: string; description: string; kicker: string; lead: string }> = {
   '/about-us': { title: 'Change that begins with people.', description: 'Learn about Nova Green Economy Foundation and our community-led approach to a fair, climate-resilient future in Uganda.', kicker: 'Who we are', lead: 'We are a Uganda-rooted nonprofit working alongside communities to make the green economy work for everyone.' },
@@ -168,13 +175,42 @@ function Header() {
 }
 
 function Footer() {
+  const [wordmarkVisible, setWordmarkVisible] = useState(false);
+  const wordmarkRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const target = wordmarkRef.current;
+    if (!target) return;
+
+    if (
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      !('IntersectionObserver' in window)
+    ) {
+      setWordmarkVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        setWordmarkVisible(true);
+        observer.disconnect();
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -12% 0px' },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
+
   return <footer className="bg-[#183c2c] text-[#f5f0e5]">
-    <div className="mx-auto grid max-w-[1440px] gap-12 px-6 py-16 md:grid-cols-[1.2fr_.8fr_1fr] md:px-10 xl:px-[4.5rem]">
+    <div className="mx-auto grid max-w-[1440px] gap-12 px-6 py-16 md:grid-cols-2 md:px-10 xl:grid-cols-[1.1fr_1fr_1fr_.72fr] xl:px-[4.5rem]">
       <div><Brand light/><p className="mt-6 max-w-sm text-sm leading-7 text-[#d1d8cd]">A fair green economy starts with the people who know their communities best.</p><p className="mt-7 eyebrow text-[#d9aa74]">Rooted in Uganda. Connected to possibility.</p></div>
       <div><p className="eyebrow text-[#d9aa74]">Explore</p><div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 text-sm text-[#e2e4da]">{navItems.map(item => <Link key={item.href} href={item.href} className="transition hover:text-[#e8bd8d]">{item.label}</Link>)}</div></div>
       <div><p className="eyebrow text-[#d9aa74]">Find us</p><div className="mt-5 space-y-4 text-sm text-[#e2e4da]"><p className="flex gap-3"><MapPin size={17} className="shrink-0 text-[#d9aa74]"/> Kampala, Uganda</p><p className="flex gap-3"><Mail size={17} className="shrink-0 text-[#d9aa74]"/> hello@novagreenfoundation.org</p><p className="flex gap-3"><Phone size={17} className="shrink-0 text-[#d9aa74]"/> +256 (0) 200 000 000</p></div></div>
+      <div><p className="eyebrow text-[#d9aa74]">Follow NOVA</p><div className="mt-5 flex flex-wrap gap-2.5">{socialProfiles.map(({ label, Icon, href }) => href ? <a key={label} href={href} target="_blank" rel="noreferrer" aria-label={`Visit NOVA on ${label}`} className="grid h-10 w-10 place-items-center rounded-full border border-white/20 text-[#f5f0e5] transition hover:border-[#e8bd8d] hover:bg-white/10 hover:text-[#e8bd8d]"><Icon size={15}/></a> : <span key={label} role="img" aria-label={`${label} profile link coming soon`} title={`${label} profile link coming soon`} className="grid h-10 w-10 place-items-center rounded-full border border-white/20 text-[#f5f0e5]/85"><Icon size={15}/></span>)}</div><p className="mt-4 max-w-[15rem] text-xs leading-5 text-[#c3cec4]">Official social channels will be added here.</p></div>
     </div>
-     <div className="border-t border-white/15"><div className="mx-auto flex max-w-[1440px] flex-col justify-between gap-3 px-6 py-5 text-[.68rem] text-[#c3cec4] sm:flex-row md:px-10 xl:px-[4.5rem]"><span>© {new Date().getFullYear()} Nova Green Economy Foundation</span><span>Demo website · Impact figures and contact details are placeholders</span></div></div>
+    <div ref={wordmarkRef} className={`nova-wordmark-wrap mx-auto max-w-[1440px] px-6 md:px-10 xl:px-[4.5rem] ${wordmarkVisible ? 'is-written' : ''}`} aria-hidden="true"><div className="nova-wordmark-stage"><span className="nova-wordmark">NOVA</span><span className="nova-wordmark-rule"/></div></div>
+    <div className="border-t border-white/15"><div className="mx-auto flex max-w-[1440px] flex-col justify-between gap-3 px-6 py-5 text-[.68rem] text-[#c3cec4] sm:flex-row md:px-10 xl:px-[4.5rem]"><span>© {new Date().getFullYear()} Nova Green Economy Foundation</span><span>Demo website · Impact figures, contact details and social links are placeholders</span></div></div>
   </footer>;
 }
 
@@ -193,6 +229,52 @@ function ImageBand({ title, label }: { title: string; label: string }) {
 
 function Metric({ value, label }: { value: string; label: string }) {
   return <div data-scroll-reveal className="border-l border-[#d8d2c4] pl-5"><p className="font-editorial text-4xl text-[#214b37] md:text-5xl"><AnimatedNumber value={value}/></p><p className="mt-3 max-w-[12rem] text-sm leading-6 text-[#5f6d60]">{label}</p></div>;
+}
+
+function FeaturedStory() {
+  const [story, setStory] = useState<Story>(demoStories[0]);
+  const [storyState, setStoryState] = useState<'loading' | 'demo' | 'live' | 'empty' | 'error'>(
+    sanityIsConfigured ? 'loading' : 'demo',
+  );
+
+  useEffect(() => {
+    if (!sanityIsConfigured) return;
+    const controller = new AbortController();
+    fetchSanityStories(controller.signal)
+      .then((stories) => {
+        if (stories.length > 0) {
+          setStory(stories[0]);
+          setStoryState('live');
+        } else {
+          setStoryState('empty');
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setStoryState('error');
+      });
+    return () => controller.abort();
+  }, []);
+
+  const illustrative = storyState !== 'live';
+  const storyImage = story.imageUrl || '/images/uganda-farmers.jpg';
+
+  return <section className="mx-auto max-w-[1440px] px-6 py-16 md:px-10 md:py-20 xl:px-[4.5rem]">
+    <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+      <div><p className="eyebrow text-[#b46f49]">Stories from the field</p><h2 className="font-editorial mt-4 text-4xl text-[#214b37] md:text-5xl">Progress, in people’s own words.</h2></div>
+      <Link href="/news-updates" className="inline-flex items-center gap-2 border-b border-[#c0784d] pb-2 text-sm font-semibold text-[#214b37]">All news & stories <ArrowUpRight size={16}/></Link>
+    </div>
+    <article className="grid overflow-hidden rounded-[1.25rem] border border-[#ded9cc] bg-[#eeece4] md:grid-cols-[1.02fr_.98fr]">
+      <div className="relative min-h-[280px] overflow-hidden bg-[#d6d5c4] md:min-h-[410px]"><img src={storyImage} alt="" className="absolute inset-0 h-full w-full object-cover"/><div className="image-tint absolute inset-0"/><span className="absolute bottom-5 left-5 rounded-full border border-white/35 bg-[#183c2c]/35 px-4 py-2 text-[.65rem] font-semibold tracking-[.14em] text-white backdrop-blur-sm">COMMUNITY-LED CHANGE</span></div>
+      <div className="flex flex-col justify-center p-7 md:p-10 lg:p-14">
+        <p className="eyebrow text-[#b46f49]">{illustrative ? 'Illustrative field note' : story.category}{story.date ? ` · ${story.date}` : ''}</p>
+        <h3 className="font-editorial mt-5 text-3xl leading-tight text-[#214b37] md:text-4xl">{story.title}</h3>
+        <p className="mt-5 max-w-xl leading-7 text-[#5e6b60]">{story.summary}</p>
+        {storyState === 'error' && <p className="mt-4 text-xs leading-5 text-[#7a6858]">Showing sample content while the news service is unavailable.</p>}
+        {storyState === 'empty' && <p className="mt-4 text-xs leading-5 text-[#7a6858]">Showing a sample story until the first article is published in Sanity.</p>}
+        <Link href="/news-updates" className="group mt-7 inline-flex w-fit items-center gap-3 text-sm font-semibold text-[#214b37]">Read the latest story <ArrowRight size={16} className="transition-transform group-hover:translate-x-1"/></Link>
+      </div>
+    </article>
+  </section>;
 }
 
 function Home() {
@@ -217,11 +299,31 @@ function Home() {
     <section className="bg-[#e9e5d9] py-16 md:py-20"><div className="mx-auto max-w-[1440px] px-6 md:px-10 xl:px-[4.5rem]"><div className="flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><p className="eyebrow text-[#b46f49]">Where we focus</p><h2 className="font-editorial mt-4 text-4xl text-[#214b37] md:text-5xl">Four connected pathways</h2></div><p className="max-w-md text-sm leading-6 text-[#637065]">We invest in the everyday systems that help families thrive and communities adapt.</p></div>
       <div className="mt-11 grid gap-px overflow-hidden rounded-2xl bg-[#c9c8b9] md:grid-cols-2 xl:grid-cols-4">
         {[{icon:Sprout,n:'01',title:'Resilient livelihoods',copy:'Practical training, climate-smart agriculture and stronger local value chains.'},{icon:Recycle,n:'02',title:'Circular enterprise',copy:'Turning local materials and ingenuity into meaningful work and less waste.'},{icon:Sun,n:'03',title:'Clean energy',copy:'Making reliable, affordable energy part of everyday opportunity.'},{icon:UsersRound,n:'04',title:'Inclusive climate action',copy:'Putting women, young people and local voices in the decisions that shape change.'}].map((item,i)=><article key={item.n} className="group bg-[#f5f2e9] p-7 transition-colors hover:bg-[#f8f6ef] md:p-8"><div className="flex items-center justify-between"><item.icon size={23} strokeWidth={1.5} className="text-[#b46f49]"/><span className="font-mono text-xs text-[#899287]">{item.n}</span></div><h3 className="font-editorial mt-12 text-2xl text-[#214b37]">{item.title}</h3><p className="mt-3 min-h-[72px] text-sm leading-6 text-[#627064]">{item.copy}</p><Link href="/programmes" aria-label={`Explore ${item.title}`} className="mt-6 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#c9c8b9] text-[#214b37] transition group-hover:bg-[#214b37] group-hover:text-white"><ArrowUpRight size={16}/></Link></article>)}
-      </div></div></section>
+       </div></div></section>
+    <section className="bg-[#e9e5d9] py-16 md:py-20">
+      <div className="mx-auto max-w-[1440px] px-6 md:px-10 xl:px-[4.5rem]">
+        <div className="grid gap-5 md:grid-cols-[1fr_.72fr] md:items-end">
+          <div><p className="eyebrow text-[#b46f49]">How change takes root</p><h2 className="font-editorial mt-4 max-w-2xl text-4xl leading-tight text-[#214b37] md:text-5xl">A practical path, shaped with communities.</h2></div>
+          <p className="max-w-xl leading-7 text-[#5f6d60]">We connect local knowledge with useful skills, trusted partners and the time to learn what works—then help good ideas take hold.</p>
+        </div>
+        <div className="relative mt-10 grid gap-4 md:grid-cols-3">
+          <div className="absolute left-[16%] right-[16%] top-6 hidden h-px bg-[#c9c8b9] md:block"/>
+          {[{ n: '01', title: 'Listen first', copy: 'Start with the priorities, experience and ambitions already present in each community.', icon: UsersRound }, { n: '02', title: 'Build together', copy: 'Bring practical skills, local leadership and the right partners around shared action.', icon: Sprout }, { n: '03', title: 'Learn and grow', copy: 'Share what is working, stay accountable and strengthen solutions for the long term.', icon: CheckCircle2 }].map((step) => {
+            const StepIcon = step.icon;
+            return <article key={step.n} className="relative rounded-2xl border border-[#d6d2c5] bg-[#f5f2e9] p-6 md:p-7">
+              <div className="flex items-center justify-between"><span className="relative z-10 grid h-12 w-12 place-items-center rounded-full border border-[#d6d2c5] bg-[#f5f2e9] text-xs font-semibold text-[#b46f49]">{step.n}</span><StepIcon size={20} strokeWidth={1.5} className="text-[#8c9a86]"/></div>
+              <h3 className="font-editorial mt-7 text-2xl text-[#214b37]">{step.title}</h3>
+              <p className="mt-3 min-h-[72px] text-sm leading-6 text-[#627064]">{step.copy}</p>
+            </article>;
+          })}
+        </div>
+      </div>
+    </section>
     <section className="mx-auto grid max-w-[1440px] items-center gap-12 px-6 py-20 md:grid-cols-2 md:px-10 md:py-28 xl:px-[4.5rem]">
       <div className="relative min-h-[390px] overflow-hidden rounded-[1.25rem] bg-[#d6d5c4]"><div className="hero-image absolute inset-0 bg-cover bg-center"/><div className="image-tint absolute inset-0"/><div className="absolute bottom-6 left-6 max-w-xs text-sm leading-6 text-white">Community knowledge is not a starting point. It is the foundation.</div></div>
       <div className="md:pl-8"><p className="eyebrow text-[#b46f49]">The work, in perspective</p><h2 className="font-editorial mt-5 text-4xl leading-tight text-[#214b37] md:text-5xl">Small shifts can change the shape of a future.</h2><p className="mt-5 max-w-xl leading-7 text-[#5e6b60]">Our programmes are designed with communities, not simply delivered to them. The figures below are illustrative placeholders for the foundation’s first public impact report.</p><div className="mt-9 grid grid-cols-2 gap-x-8 gap-y-9"><Metric value="1,240+" label="people reached through skills and enterprise support"/><Metric value="18" label="community groups shaping local climate action"/><Metric value="62%" label="of programme participants are women and girls"/><Metric value="7" label="districts with active community partnerships"/></div><Link href="/sdgs-impact" className="mt-9 inline-flex items-center gap-2 text-sm font-semibold text-[#214b37]">See our impact approach <ArrowRight size={16}/></Link></div>
-    </section>
+     </section>
+    <FeaturedStory/>
     <ImageBand label="The way forward" title="A fairer economy is possible. Let’s build it together."/>
     <section className="mx-auto flex max-w-[1440px] flex-col items-start justify-between gap-7 px-6 py-16 md:flex-row md:items-center md:px-10 md:py-20 xl:px-[4.5rem]"><div><p className="eyebrow text-[#b46f49]">Partnership makes progress possible</p><h2 className="font-editorial mt-3 text-3xl text-[#214b37] md:text-4xl">Have an idea for a greener Uganda?</h2></div><ButtonLink href="/contact-us">Start a conversation</ButtonLink></section>
   </main>;
