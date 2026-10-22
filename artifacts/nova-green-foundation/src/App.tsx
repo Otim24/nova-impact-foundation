@@ -205,7 +205,7 @@ function Footer() {
   return <footer className="bg-[#183c2c] text-[#f5f0e5]">
     <div className="mx-auto grid max-w-[1440px] gap-12 px-6 py-16 md:grid-cols-2 md:px-10 xl:grid-cols-[1.1fr_1fr_1fr_.72fr] xl:px-[4.5rem]">
       <div><Brand light/><p className="mt-6 max-w-sm text-sm leading-7 text-[#d1d8cd]">A fair green economy starts with the people who know their communities best.</p><p className="mt-7 eyebrow text-[#d9aa74]">Rooted in Uganda. Connected to possibility.</p></div>
-      <div><p className="eyebrow text-[#d9aa74]">Explore</p><div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 text-sm text-[#e2e4da]">{navItems.map(item => <Link key={item.href} href={item.href} className="transition hover:text-[#e8bd8d]">{item.label}</Link>)}</div></div>
+      <div><p className="eyebrow text-[#d9aa74]">Explore</p><div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 text-sm text-[#e2e4da]">{navItems.map(item => <Link key={item.href} href={item.href} className="transition hover:text-[#e8bd8d]">{item.label}</Link>)}</div><Link href="/donate" className="mt-7 inline-flex items-center gap-2 rounded-full border border-[#d9aa74]/60 px-4 py-2.5 text-sm font-semibold text-[#f5f0e5] transition hover:bg-white/10">Support NOVA <ArrowRight size={15}/></Link></div>
       <div><p className="eyebrow text-[#d9aa74]">Find us</p><div className="mt-5 space-y-4 text-sm text-[#e2e4da]"><p className="flex gap-3"><MapPin size={17} className="shrink-0 text-[#d9aa74]"/> Kampala, Uganda</p><p className="flex gap-3"><Mail size={17} className="shrink-0 text-[#d9aa74]"/> hello@novagreenfoundation.org</p><p className="flex gap-3"><Phone size={17} className="shrink-0 text-[#d9aa74]"/> +256 (0) 200 000 000</p></div></div>
       <div><p className="eyebrow text-[#d9aa74]">Follow NOVA</p><div className="mt-5 flex flex-wrap gap-2.5">{socialProfiles.map(({ label, Icon, href }) => href ? <a key={label} href={href} target="_blank" rel="noreferrer" aria-label={`Visit NOVA on ${label}`} className="grid h-10 w-10 place-items-center rounded-full border border-white/20 text-[#f5f0e5] transition hover:border-[#e8bd8d] hover:bg-white/10 hover:text-[#e8bd8d]"><Icon size={15}/></a> : <span key={label} role="img" aria-label={`${label} profile link coming soon`} title={`${label} profile link coming soon`} className="grid h-10 w-10 place-items-center rounded-full border border-white/20 text-[#f5f0e5]/85"><Icon size={15}/></span>)}</div><p className="mt-4 max-w-[15rem] text-xs leading-5 text-[#c3cec4]">Official social channels will be added here.</p></div>
     </div>
@@ -325,7 +325,13 @@ function Home() {
      </section>
     <FeaturedStory/>
     <ImageBand label="The way forward" title="A fairer economy is possible. Let’s build it together."/>
-    <section className="mx-auto flex max-w-[1440px] flex-col items-start justify-between gap-7 px-6 py-16 md:flex-row md:items-center md:px-10 md:py-20 xl:px-[4.5rem]"><div><p className="eyebrow text-[#b46f49]">Partnership makes progress possible</p><h2 className="font-editorial mt-3 text-3xl text-[#214b37] md:text-4xl">Have an idea for a greener Uganda?</h2></div><ButtonLink href="/contact-us">Start a conversation</ButtonLink></section>
+     <section className="mx-auto flex max-w-[1440px] flex-col items-start justify-between gap-7 px-6 py-16 md:flex-row md:items-center md:px-10 md:py-20 xl:px-[4.5rem]"><div><p className="eyebrow text-[#b46f49]">Partnership makes progress possible</p><h2 className="font-editorial mt-3 text-3xl text-[#214b37] md:text-4xl">Have an idea for a greener Uganda?</h2></div><ButtonLink href="/contact-us">Start a conversation</ButtonLink></section>
+     <section className="mx-4 mb-16 overflow-hidden rounded-[1.4rem] bg-[#e7e3d7] md:mx-10 md:mb-20">
+       <div className="mx-auto grid max-w-[1440px] gap-8 px-7 py-10 md:grid-cols-[1fr_auto] md:items-center md:px-12 md:py-12">
+         <div><p className="eyebrow text-[#a96340]">A role in what comes next</p><h2 className="font-editorial mt-3 max-w-2xl text-3xl leading-tight text-[#214b37] md:text-4xl">Help community-led ideas find room to grow.</h2><p className="mt-4 max-w-2xl leading-7 text-[#5e6b60]">A gift would support NOVA’s programme areas, subject to approved plans and priorities. Explore the giving preview—no payment is taken on this website.</p></div>
+         <ButtonLink href="/donate">Explore giving</ButtonLink>
+       </div>
+     </section>
   </main>;
 }
 
@@ -445,6 +451,119 @@ function HomePage() {
  return <Home/>;
 }
 
+const givingAmounts = [25000, 50000, 100000, 250000];
+const formatUGX = (amount: number) => new Intl.NumberFormat('en-UG').format(amount);
+
+function DonatePage() {
+  const [amount, setAmount] = useState<number | null>(50000);
+  const [customAmount, setCustomAmount] = useState('');
+  const [method, setMethod] = useState('MTN Mobile Money');
+  const [notice, setNotice] = useState(false);
+  useEffect(() => {
+    if (!notice) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setNotice(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [notice]);
+  useEffect(() => {
+    updatePageMetadata('Support NOVA | Nova Green Economy Foundation', 'Learn how you could support NOVA’s community-led livelihoods, circular enterprise, clean energy and inclusive climate action in Uganda. Giving options are a demo; checkout is not connected.');
+  }, []);
+  const parsedCustom = Number(customAmount);
+  const selectedAmount = amount ?? parsedCustom;
+  const amountIsValid = Number.isInteger(selectedAmount) && selectedAmount > 0;
+  const chooseCustom = (value: string) => {
+    setCustomAmount(value);
+    setAmount(null);
+  };
+  return <main className="page-enter">
+    <section className="relative overflow-hidden bg-[#214b37] text-[#f7f2e7]">
+      <div className="absolute inset-0 hero-image bg-cover bg-center opacity-35"/>
+      <div className="relative mx-auto max-w-[1440px] px-6 py-16 md:px-10 md:py-24 xl:px-[4.5rem]">
+        <p className="eyebrow text-[#e5b887]">Stand with community-led change</p>
+        <h1 className="font-editorial mt-6 max-w-4xl text-5xl leading-[1.02] md:text-7xl">Give possibility<br/><em className="font-normal">room to grow.</em></h1>
+        <p className="mt-6 max-w-2xl text-base leading-7 text-[#e0e5d9] md:text-lg md:leading-8">NOVA works alongside communities in Uganda to strengthen livelihoods, circular enterprise, clean energy and inclusive climate action. Your support can help sustain that work.</p>
+        <p className="mt-8 inline-flex items-center gap-2 border-l border-[#e5b887] pl-4 text-sm text-[#f3e5d0]"><span className="font-semibold">Demo giving page</span><span aria-hidden="true">·</span>Checkout is not connected; no payment can be made here.</p>
+      </div>
+    </section>
+    <section className="mx-auto grid max-w-[1440px] gap-12 px-6 py-14 md:grid-cols-[.78fr_1.22fr] md:px-10 md:py-20 xl:px-[4.5rem]">
+      <aside className="md:pt-3">
+        <p className="eyebrow text-[#b46f49]">Why give</p>
+        <h2 className="font-editorial mt-4 text-4xl leading-tight text-[#214b37] md:text-5xl">Back the work communities are already shaping.</h2>
+        <p className="mt-5 leading-7 text-[#5e6b60]">Support helps NOVA advance locally led programmes across climate-resilient livelihoods, circular enterprise, clean energy and inclusive climate action. Any future use of gifts would be guided by approved plans and priorities.</p>
+        <div className="mt-8 space-y-4 border-t border-[#d8d2c4] pt-6">
+          {[
+            ['Rooted in local priorities', 'Community knowledge and leadership shape the work.'],
+            ['Connected programme areas', 'Livelihoods, enterprise, energy and climate action reinforce one another.'],
+            ['Accountability matters', 'Support is considered alongside approved plans and organisational priorities.'],
+          ].map(([title, copy]) => <article key={title} className="flex gap-4"><span className="mt-1 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[#c9c8b9] text-[#a96340]"><CheckCircle2 size={15}/></span><div><h3 className="font-semibold text-[#214b37]">{title}</h3><p className="mt-1 text-sm leading-6 text-[#637065]">{copy}</p></div></article>)}
+        </div>
+      </aside>
+      <div className="rounded-2xl border border-[#d9d4c7] bg-[#fbf9f3] p-6 shadow-[0_12px_45px_rgba(33,75,55,.06)] md:p-9">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#e1ddd2] pb-5"><div><p className="eyebrow text-[#b46f49]">Giving preferences</p><h2 className="font-editorial mt-2 text-3xl text-[#214b37]">Choose a demo amount</h2></div><span className="rounded-full bg-[#eee9dc] px-3 py-1.5 text-xs font-semibold text-[#5c675c]">UGX · Uganda shillings</span></div>
+        <fieldset className="mt-6">
+          <legend className="text-sm font-semibold text-[#314a3b]">Suggested amounts</legend>
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {givingAmounts.map(value => <button key={value} type="button" aria-pressed={amount === value} onClick={() => { setAmount(value); setCustomAmount(''); }} className={`rounded-xl border px-3 py-4 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b46f49] ${amount === value ? 'border-[#214b37] bg-[#e9eee6] text-[#214b37] ring-1 ring-[#214b37]' : 'border-[#d9d4c7] bg-[#f8f6ef] text-[#415447] hover:border-[#8a9a88]'}`}><span className="block font-mono text-[.65rem] text-[#7a8479]">UGX</span><span className="mt-1 block font-semibold">{formatUGX(value)}</span></button>)}
+          </div>
+        </fieldset>
+        <label className="mt-5 block text-sm font-semibold text-[#314a3b]">Or enter another amount
+          <div className="mt-2 flex overflow-hidden rounded-lg border border-[#d4d0c3] bg-[#f8f6ef] focus-within:border-[#214b37]"><span className="grid place-items-center border-r border-[#d4d0c3] px-4 text-sm text-[#647064]">UGX</span><input type="number" min="1" step="1" inputMode="numeric" value={customAmount} onChange={event => chooseCustom(event.target.value)} aria-label="Custom amount in Uganda shillings" placeholder="Enter amount" className="min-w-0 flex-1 bg-transparent px-4 py-3 font-normal outline-none"/></div>
+        </label>
+        <fieldset className="mt-7">
+          <legend className="text-sm font-semibold text-[#314a3b]">Planned payment preference</legend>
+          <p className="mt-1 text-xs leading-5 text-[#788276]">These are planned options only. No payment method is currently connected.</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            {['MTN Mobile Money', 'Airtel Money', 'Card · international donors'].map(option => <button key={option} type="button" aria-pressed={method === option} onClick={() => setMethod(option)} className={`min-h-[58px] rounded-lg border px-3 py-3 text-left text-sm font-medium transition ${method === option ? 'border-[#214b37] bg-[#e9eee6] text-[#214b37]' : 'border-[#d9d4c7] bg-[#f8f6ef] text-[#506153] hover:border-[#8a9a88]'}`}>{option}</button>)}
+          </div>
+        </fieldset>
+        <div className="mt-7 rounded-xl border border-[#dfd9ca] bg-[#f1eee5] p-4 text-sm leading-6 text-[#58675b]"><span className="font-semibold text-[#214b37]">A note on giving.</span> Gifts would support NOVA’s programme areas, subject to approved plans and priorities. This demo does not make claims about specific outcomes for any amount.</div>
+        <button type="button" disabled={!amountIsValid} onClick={() => setNotice(true)} className="mt-6 inline-flex w-full items-center justify-center gap-3 rounded-full bg-[#214b37] px-6 py-4 text-sm font-semibold text-[#f8f3e9] transition hover:bg-[#315f48] disabled:cursor-not-allowed disabled:opacity-50">Continue to demo notice <ArrowRight size={16}/></button>
+        {!amountIsValid && <p className="mt-2 text-sm text-[#8a4d36]" role="alert">Enter a whole amount greater than zero to continue.</p>}
+        <p className="mt-3 text-center text-xs leading-5 text-[#788276]">Selected: {amountIsValid ? `UGX ${formatUGX(selectedAmount)}` : 'No valid amount'} · {method}</p>
+      </div>
+    </section>
+    <section className="border-y border-[#ddd8ca] bg-[#eae7dc] px-6 py-10 text-center"><p className="eyebrow text-[#b46f49]">Thoughtful support, grounded in trust</p><p className="font-editorial mx-auto mt-3 max-w-3xl text-2xl leading-snug text-[#214b37] md:text-3xl">Giving should be clear about what is known—and what is still being built.</p></section>
+    {notice && <div className="fixed inset-0 z-50 grid place-items-center bg-[#183c2c]/55 p-5" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setNotice(false); }}>
+      <section role="dialog" aria-modal="true" aria-labelledby="donation-demo-title" className="w-full max-w-lg rounded-2xl border border-[#d9d4c7] bg-[#fbf9f3] p-7 shadow-2xl md:p-9">
+        <p className="eyebrow text-[#b46f49]">Demo only</p><h2 id="donation-demo-title" className="font-editorial mt-3 text-3xl text-[#214b37]">No payment was made.</h2>
+        <p className="mt-4 leading-7 text-[#5e6b60]">Checkout is not connected, and your selected amount and payment preference have not been submitted or charged.</p>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row"><Link href="/donate/thank-you" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#214b37] px-5 py-3 text-sm font-semibold text-[#f8f3e9]">View thank-you page preview <ArrowRight size={15}/></Link><button autoFocus type="button" onClick={() => setNotice(false)} className="rounded-full border border-[#c9c8b9] px-5 py-3 text-sm font-semibold text-[#214b37] hover:bg-[#f1eee5]">Return to giving</button></div>
+      </section>
+    </div>}
+  </main>;
+}
+
+function DonationThankYouPreview() {
+  useEffect(() => {
+    updatePageMetadata('Thank-you page preview | Nova Green Economy Foundation', 'Preview of a possible post-checkout thank-you page. No donation or payment has been received.');
+  }, []);
+  return <main className="page-enter">
+    <section className="relative overflow-hidden bg-[#214b37] text-[#f7f2e7]">
+      <div className="absolute inset-0 hero-image bg-cover bg-center opacity-30"/>
+      <div className="relative mx-auto max-w-[1440px] px-6 py-12 md:px-10 md:py-16 xl:px-[4.5rem]">
+        <p className="eyebrow text-[#e5b887]">Post-checkout page · preview</p>
+        <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-[#e5b887]/60 bg-[#183c2c]/40 px-4 py-2 text-xs font-bold uppercase tracking-[.13em] text-[#f2d5af]"><span className="h-2 w-2 rounded-full bg-[#e5b887]"/>Preview only — no payment received</div>
+        <h1 className="font-editorial mt-7 max-w-4xl text-5xl leading-[1.02] md:text-7xl">Thank you for standing with community-led change.</h1>
+        <p className="mt-6 max-w-2xl text-base leading-7 text-[#e0e5d9] md:text-lg">This is an example of what a post-checkout page could look like once an approved giving process is connected.</p>
+      </div>
+    </section>
+    <section className="mx-auto max-w-[1000px] px-6 py-14 md:px-10 md:py-20">
+      <div className="rounded-2xl border-2 border-[#b46f49] bg-[#f8f3e9] p-6 md:p-9">
+        <p className="eyebrow text-[#a96340]">Important clarification</p>
+        <h2 className="font-editorial mt-3 text-3xl text-[#214b37] md:text-4xl">No donation or payment has been received.</h2>
+        <p className="mt-4 max-w-2xl leading-7 text-[#58675b]">This page is a front-end preview only. The donation form does not connect to a payment provider, no transaction has taken place, and no receipt or confirmation is being issued.</p>
+      </div>
+      <div className="mt-10 grid gap-8 md:grid-cols-[1fr_.8fr]">
+        <div><p className="eyebrow text-[#b46f49]">If giving were enabled</p><h2 className="font-editorial mt-3 text-3xl text-[#214b37]">Your support would back work shaped alongside communities.</h2><p className="mt-4 leading-7 text-[#5e6b60]">Gifts would support NOVA’s programme areas, subject to approved plans and priorities: community-led livelihoods, circular enterprise, clean energy and inclusive climate action.</p></div>
+        <aside className="rounded-2xl bg-[#e9e5d9] p-6"><p className="eyebrow text-[#a96340]">What happens next</p><p className="mt-4 text-sm leading-6 text-[#5e6b60]">This preview is not linked to donor records. It does not store your selection or contact details. A real giving flow would require an approved payment process and clear donor communications.</p></aside>
+      </div>
+      <div className="mt-10 flex flex-wrap gap-4"><Link href="/donate" className="inline-flex items-center gap-3 rounded-full bg-[#214b37] px-6 py-3.5 text-sm font-semibold text-[#f8f3e9] hover:bg-[#315f48]"><ArrowRight className="rotate-180" size={16}/> Back to giving demo</Link><Link href="/" className="inline-flex items-center gap-2 rounded-full border border-[#c9c8b9] px-6 py-3.5 text-sm font-semibold text-[#214b37] hover:bg-[#f1eee5]">Return to NOVA home <ArrowUpRight size={15}/></Link></div>
+    </section>
+  </main>;
+}
+
 function Router() {
   return (
     // Keep a shared shell (sidebar, navbar) outside the boundary so it
@@ -452,6 +571,8 @@ function Router() {
     <RoutedErrorBoundary>
       <Switch>
         <Route path="/" component={HomePage} />
+        <Route path="/donate/thank-you" component={DonationThankYouPreview} />
+        <Route path="/donate" component={DonatePage} />
         {Object.keys(pageData).map(path => <Route key={path} path={path}><InnerPage path={path}/></Route>)}
         <Route component={NotFound} />
       </Switch>
