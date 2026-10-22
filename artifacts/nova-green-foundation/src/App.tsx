@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -61,10 +62,23 @@ function updatePageMetadata(title: string, description: string) {
   updateTag('meta[name="twitter:description"]', 'name', 'twitter:description', description);
 }
 
+function scrollPageToTop() {
+  const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ? 'auto'
+    : 'smooth';
+  window.scrollTo({ top: 0, behavior });
+}
+
 function ScrollMotionObserver() {
   const [location] = useLocation();
+  const previousLocation = useRef(location);
 
   useEffect(() => {
+    if (previousLocation.current !== location) {
+      scrollPageToTop();
+    }
+    previousLocation.current = location;
+
     const root = document.documentElement;
     root.classList.add('motion-ready');
     const revealSelector = [
@@ -152,7 +166,8 @@ function ScrollMotionObserver() {
 }
 
 function Brand({ light = false }: { light?: boolean }) {
-  return <Link href="/" className={`flex items-center gap-3 ${light ? 'text-[#f5f0e5]' : 'text-[#183c2c]'}`} aria-label="Nova Green Economy Foundation home" data-testid="link-home">
+  const [path] = useLocation();
+  return <Link href="/" onClick={() => { if (path === '/') scrollPageToTop(); }} className={`flex items-center gap-3 ${light ? 'text-[#f5f0e5]' : 'text-[#183c2c]'}`} aria-label="Nova Green Economy Foundation home" data-testid="link-home">
     <span className={`grid h-10 w-10 place-items-center rounded-full ${light ? 'bg-[#f5f0e5] text-[#214b37]' : 'bg-[#214b37] text-[#f6f1e6]'}`}><span className="font-editorial text-[1.6rem] leading-none">N</span></span>
     <span className="leading-[1.05]"><span className="block text-[.68rem] font-bold tracking-[.13em]">NOVA</span><span className="mt-1 block text-[.53rem] font-semibold tracking-[.13em]">GREEN ECONOMY<br/>FOUNDATION</span></span>
   </Link>;
@@ -161,6 +176,7 @@ function Brand({ light = false }: { light?: boolean }) {
 function Header() {
   const [open, setOpen] = useState(false);
   const [path] = useLocation();
+  useEffect(() => setOpen(false), [path]);
   return <header className="relative z-40 border-b border-[#d9d4c7] bg-[#f5f2e9]">
     <div className="mx-auto flex min-h-[82px] max-w-[1440px] items-center justify-between px-5 md:px-10 xl:px-[4.5rem]">
       <Brand />
@@ -170,7 +186,7 @@ function Header() {
       <Link href="/contact-us" className="hidden items-center gap-2 rounded-full bg-[#214b37] px-5 py-3 text-[.75rem] font-semibold text-[#f8f3e9] transition hover:bg-[#315f48] md:flex" data-testid="link-header-contact">Let’s talk <ArrowUpRight size={15}/></Link>
       <button className="grid h-11 w-11 place-items-center rounded-full border border-[#d9d4c7] text-[#214b37] lg:hidden" type="button" aria-label={open ? 'Close navigation' : 'Open navigation'} aria-expanded={open} onClick={() => setOpen(!open)} data-testid="button-mobile-menu">{open ? <X/> : <Menu/>}</button>
     </div>
-    {open && <nav className="absolute left-0 right-0 top-full border-b border-[#d9d4c7] bg-[#f5f2e9] px-6 pb-6 pt-2 shadow-lg lg:hidden" aria-label="Mobile navigation">{navItems.map(item => <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className="flex border-t border-[#ded9cc] py-4 text-sm text-[#214b37]">{item.label}<ArrowUpRight className="ml-auto" size={17}/></Link>)}<Link href="/contact-us" onClick={() => setOpen(false)} className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#214b37] px-5 py-3 text-sm text-[#f8f3e9]">Contact us <ArrowRight size={15}/></Link></nav>}
+    {open && <nav className="mobile-menu-panel absolute left-0 right-0 top-full border-b border-[#d9d4c7] bg-[#f5f2e9] px-6 pb-6 pt-2 shadow-lg lg:hidden" aria-label="Mobile navigation">{navItems.map(item => <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className="flex border-t border-[#ded9cc] py-4 text-sm text-[#214b37]">{item.label}<ArrowUpRight className="ml-auto" size={17}/></Link>)}<Link href="/contact-us" onClick={() => setOpen(false)} className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#214b37] px-5 py-3 text-sm text-[#f8f3e9]">Contact us <ArrowRight size={15}/></Link></nav>}
   </header>;
 }
 
@@ -205,7 +221,7 @@ function Footer() {
   return <footer className="bg-[#183c2c] text-[#f5f0e5]">
     <div className="mx-auto grid max-w-[1440px] gap-12 px-6 py-16 md:grid-cols-2 md:px-10 xl:grid-cols-[1.1fr_1fr_1fr_.72fr] xl:px-[4.5rem]">
       <div><Brand light/><p className="mt-6 max-w-sm text-sm leading-7 text-[#d1d8cd]">A fair green economy starts with the people who know their communities best.</p><p className="mt-7 eyebrow text-[#d9aa74]">Rooted in Uganda. Connected to possibility.</p></div>
-      <div><p className="eyebrow text-[#d9aa74]">Explore</p><div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 text-sm text-[#e2e4da]">{navItems.map(item => <Link key={item.href} href={item.href} className="transition hover:text-[#e8bd8d]">{item.label}</Link>)}</div><Link href="/donate" className="mt-7 inline-flex items-center gap-2 rounded-full border border-[#d9aa74]/60 px-4 py-2.5 text-sm font-semibold text-[#f5f0e5] transition hover:bg-white/10">Support NOVA <ArrowRight size={15}/></Link></div>
+      <div><p className="eyebrow text-[#d9aa74]">Explore</p><div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 text-sm text-[#e2e4da]">{navItems.map(item => <Link key={item.href} href={item.href} className="transition hover:text-[#e8bd8d]">{item.label}</Link>)}</div><Link href="/donate" onClick={scrollPageToTop} className="mt-7 inline-flex items-center gap-2 rounded-full border border-[#d9aa74]/60 px-4 py-2.5 text-sm font-semibold text-[#f5f0e5] transition hover:bg-white/10">Support NOVA <ArrowRight size={15}/></Link></div>
       <div><p className="eyebrow text-[#d9aa74]">Find us</p><div className="mt-5 space-y-4 text-sm text-[#e2e4da]"><p className="flex gap-3"><MapPin size={17} className="shrink-0 text-[#d9aa74]"/> Kampala, Uganda</p><p className="flex gap-3"><Mail size={17} className="shrink-0 text-[#d9aa74]"/> hello@novagreenfoundation.org</p><p className="flex gap-3"><Phone size={17} className="shrink-0 text-[#d9aa74]"/> +256 (0) 200 000 000</p></div></div>
       <div><p className="eyebrow text-[#d9aa74]">Follow NOVA</p><div className="mt-5 flex flex-wrap gap-2.5">{socialProfiles.map(({ label, Icon, href }) => href ? <a key={label} href={href} target="_blank" rel="noreferrer" aria-label={`Visit NOVA on ${label}`} className="grid h-10 w-10 place-items-center rounded-full border border-white/20 text-[#f5f0e5] transition hover:border-[#e8bd8d] hover:bg-white/10 hover:text-[#e8bd8d]"><Icon size={15}/></a> : <span key={label} role="img" aria-label={`${label} profile link coming soon`} title={`${label} profile link coming soon`} className="grid h-10 w-10 place-items-center rounded-full border border-white/20 text-[#f5f0e5]/85"><Icon size={15}/></span>)}</div><p className="mt-4 max-w-[15rem] text-xs leading-5 text-[#c3cec4]">Official social channels will be added here.</p></div>
     </div>
@@ -366,7 +382,36 @@ function ImpactContent() {
 }
 
 function PartnersContent() {
- return <><section className="mx-auto grid max-w-[1440px] gap-12 px-6 py-16 md:grid-cols-[1fr_1fr] md:px-10 md:py-24 xl:px-[4.5rem]"><div><p className="eyebrow text-[#b46f49]">Partnership in practice</p><h2 className="font-editorial mt-4 text-4xl leading-tight text-[#214b37] md:text-5xl">Different strengths. Shared direction.</h2></div><div><p className="leading-7 text-[#5f6d60]">We collaborate with the people and organisations closest to the work: community associations, local government, civil society, educators and responsible businesses.</p><p className="mt-5 leading-7 text-[#5f6d60]">Our best partnerships are grounded in mutual respect, clear roles and a willingness to learn together. We are open to conversations with organisations whose values align with locally led, inclusive climate action.</p></div></section><section className="bg-[#e9e5d9] py-16"><div className="mx-auto max-w-[1440px] px-6 md:px-10 xl:px-[4.5rem]"><p className="eyebrow text-[#b46f49]">Partnership principles</p><div className="mt-8 grid gap-8 md:grid-cols-3">{[['Locally grounded','Community priorities guide programme design and delivery.'],['Mutually accountable','We align on outcomes, responsibilities and transparent learning.'],['Built to last','We strengthen local capacity and relationships beyond project cycles.']].map((x,i)=><article className="border-t border-[#c9c8b9] pt-5" key={x[0]}><span className="font-mono text-xs text-[#b46f49]">0{i+1}</span><h3 className="font-editorial mt-7 text-2xl text-[#214b37]">{x[0]}</h3><p className="mt-3 leading-7 text-[#637065]">{x[1]}</p></article>)}</div></div></section><CTA/></>;
+ const samplePartners = [
+   { mark: 'WFP', name: 'World Food Programme', kind: 'Illustrative international partner', description: 'A sample profile showing how a humanitarian partner could appear alongside NOVA’s community-led resilience work.' },
+   { mark: 'DISTRICT', name: 'District & local government', kind: 'Illustrative public-sector partner', description: 'A sample collaboration profile for locally coordinated planning and delivery.' },
+   { mark: 'COMMUNITY', name: 'Community-based organisations', kind: 'Illustrative community partner', description: 'A sample profile representing local groups that bring context, leadership and lived experience.' },
+   { mark: 'GREEN', name: 'Green enterprise & energy innovators', kind: 'Illustrative enterprise partner', description: 'A sample profile for organisations developing practical livelihood and clean-energy opportunities.' },
+ ];
+ return <>
+   <section className="mx-auto grid max-w-[1440px] gap-12 px-6 py-16 md:grid-cols-[1fr_1fr] md:px-10 md:py-24 xl:px-[4.5rem]">
+     <div><p className="eyebrow text-[#b46f49]">Partnership in practice</p><h2 className="font-editorial mt-4 text-4xl leading-tight text-[#214b37] md:text-5xl">Different strengths. Shared direction.</h2></div>
+     <div><p className="leading-7 text-[#5f6d60]">Partnerships can bring together community associations, local government, civil society, educators and responsible businesses.</p><p className="mt-5 leading-7 text-[#5f6d60]">Strong collaborations are grounded in mutual respect, clear roles and a willingness to learn together. Each relationship should reflect locally led, inclusive climate action.</p></div>
+   </section>
+   <section className="bg-[#f5f2e9] pb-16 md:pb-20">
+     <div className="mx-auto max-w-[1440px] px-6 md:px-10 xl:px-[4.5rem]">
+       <div className="max-w-3xl"><p className="eyebrow text-[#b46f49]">Illustrative partner profiles</p><h2 className="font-editorial mt-3 text-3xl text-[#214b37] md:text-4xl">Good work grows through shared effort.</h2></div>
+       <p role="note" className="mt-6 rounded-xl border border-[#d8d2c4] bg-[#eeece4] px-5 py-4 text-sm leading-6 text-[#59675c]"><strong className="text-[#214b37]">Demo information:</strong> These names and profiles are illustrative only. They do not confirm a current partnership, endorsement or authorization. Replace them with approved partner information before publishing.</p>
+       <div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+         {samplePartners.map(partner => <article key={partner.mark} className="flex min-h-[260px] flex-col rounded-2xl border border-[#ded9cc] bg-[#fbf9f3] p-6 transition hover:-translate-y-1 hover:shadow-lg">
+           <div className="flex items-start justify-between gap-4"><span className="grid min-h-12 min-w-12 place-items-center rounded-xl bg-[#e9e5d9] px-3 text-[.65rem] font-bold tracking-[.1em] text-[#214b37]">{partner.mark}</span><span className="rounded-full border border-[#d9d4c7] px-2.5 py-1 text-[.58rem] font-semibold uppercase tracking-[.08em] text-[#a96340]">Sample</span></div>
+           <p className="eyebrow mt-7 text-[#a96340]">{partner.kind}</p>
+           <h3 className="font-editorial mt-2 text-2xl leading-tight text-[#214b37]">{partner.name}</h3>
+           <p className="mt-3 text-sm leading-6 text-[#637065]">{partner.description}</p>
+         </article>)}
+       </div>
+     </div>
+   </section>
+   <section className="bg-[#e9e5d9] py-16">
+     <div className="mx-auto max-w-[1440px] px-6 md:px-10 xl:px-[4.5rem]"><p className="eyebrow text-[#b46f49]">Partnership principles</p><div className="mt-8 grid gap-8 md:grid-cols-3">{[['Locally grounded','Community priorities guide programme design and delivery.'],['Mutually accountable','We align on outcomes, responsibilities and transparent learning.'],['Built to last','We strengthen local capacity and relationships beyond project cycles.']].map((x,i)=><article className="border-t border-[#c9c8b9] pt-5" key={x[0]}><span className="font-mono text-xs text-[#b46f49]">0{i+1}</span><h3 className="font-editorial mt-7 text-2xl text-[#214b37]">{x[0]}</h3><p className="mt-3 leading-7 text-[#637065]">{x[1]}</p></article>)}</div></div>
+   </section>
+   <CTA/>
+ </>;
 }
 
 function NewsContent(){
@@ -374,6 +419,9 @@ function NewsContent(){
  const [stories,setStories]=useState<Story[]>(demoStories);
  const [cmsState,setCmsState]=useState<'demo'|'loading'|'live'|'empty'|'error'>(sanityIsConfigured?'loading':'demo');
  const [activeStory,setActiveStory]=useState<Story|null>(null);
+ const storyDialogRef=useRef<HTMLElement|null>(null);
+ const storyCloseButtonRef=useRef<HTMLButtonElement|null>(null);
+ const storyTriggerRef=useRef<HTMLButtonElement|null>(null);
  const filters=['ALL STORIES',...Array.from(new Set(stories.map(s=>s.category)))];
  const shown=filter==='ALL STORIES'?stories:stories.filter(s=>s.category===filter);
 
@@ -388,9 +436,27 @@ function NewsContent(){
  },[]);
  useEffect(()=>{
    if(!activeStory)return;
-   const onKeyDown=(event:KeyboardEvent)=>{if(event.key==='Escape')setActiveStory(null);};
+  const previousOverflow=document.body.style.overflow;
+  document.body.style.overflow='hidden';
+  storyCloseButtonRef.current?.focus({preventScroll:true});
+  const onKeyDown=(event:KeyboardEvent)=>{
+   if(event.key==='Escape'){event.preventDefault();setActiveStory(null);return;}
+   if(event.key!=='Tab')return;
+   const dialog=storyDialogRef.current;
+   if(!dialog)return;
+   const focusable=Array.from(dialog.querySelectorAll<HTMLElement>('button, a[href], [tabindex]:not([tabindex="-1"])'));
+   if(!focusable.length)return;
+   const first=focusable[0];
+   const last=focusable[focusable.length-1];
+   if(event.shiftKey&&(document.activeElement===first||!dialog.contains(document.activeElement))){event.preventDefault();last.focus();}
+   else if(!event.shiftKey&&(document.activeElement===last||!dialog.contains(document.activeElement))){event.preventDefault();first.focus();}
+  };
    window.addEventListener('keydown',onKeyDown);
-   return ()=>window.removeEventListener('keydown',onKeyDown);
+  return ()=>{
+   window.removeEventListener('keydown',onKeyDown);
+   document.body.style.overflow=previousOverflow;
+   if(storyTriggerRef.current?.isConnected)storyTriggerRef.current.focus({preventScroll:true});
+  };
  },[activeStory]);
 
  const statusMessage = {
@@ -412,20 +478,22 @@ function NewsContent(){
      <div className="flex gap-3 text-[.67rem] uppercase tracking-[.1em] text-[#a16948]"><span>{s.date}</span><span>·</span><span>4 min read</span></div>
      <h2 className="font-editorial mt-3 max-w-xl text-3xl leading-tight text-[#214b37]">{s.title}</h2>
      <p className="mt-3 max-w-xl leading-7 text-[#637065]">{s.summary}</p>
-     <button type="button" onClick={()=>setActiveStory(s)} className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#214b37]">Read story <ArrowUpRight size={15}/></button>
+      <button type="button" onClick={event=>{storyTriggerRef.current=event.currentTarget;setActiveStory(s);}} className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#214b37]">Read story <ArrowUpRight size={15}/></button>
    </article>)}</div>
    {shown.length===0&&cmsState!=='empty'&&<p className="py-16 text-center text-[#637065]">No stories in this category yet.</p>}
    {cmsState==='empty'&&<p className="rounded-xl bg-[#ece9df] px-6 py-12 text-center text-[#637065]">Published Sanity stories will appear here as soon as your team adds them.</p>}
  </section>
- {activeStory&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-[#14291f]/70 p-4 backdrop-blur-sm" role="presentation" onClick={(event)=>{if(event.target===event.currentTarget)setActiveStory(null);}}>
-   <article role="dialog" aria-modal="true" aria-labelledby="story-title" className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-[#f5f2e9] p-7 shadow-2xl md:p-12">
-     <button type="button" onClick={()=>setActiveStory(null)} aria-label="Close story" className="absolute right-5 top-5 grid h-10 w-10 place-items-center rounded-full border border-[#d4d0c3] text-[#214b37] hover:bg-[#e9e5d9]"><X size={18}/></button>
+  {activeStory&&createPortal(<div className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-[#14291f]/70 p-3 backdrop-blur-sm sm:p-6" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)setActiveStory(null);}}>
+    <article ref={storyDialogRef} role="dialog" aria-modal="true" aria-labelledby="story-title" aria-describedby="story-summary" tabIndex={-1} className="relative max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl overflow-y-auto overscroll-contain rounded-2xl bg-[#f5f2e9] p-6 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:p-8 md:p-12">
+      <div className="sticky top-0 z-10 -mx-6 -mt-6 flex justify-end bg-[#f5f2e9] px-6 pb-2 pt-4 sm:-mx-8 sm:-mt-8 sm:px-8 md:-mx-12 md:-mt-12 md:px-12 md:pt-6">
+        <button ref={storyCloseButtonRef} type="button" onClick={()=>setActiveStory(null)} aria-label="Close story" className="grid h-10 w-10 place-items-center rounded-full border border-[#d4d0c3] text-[#214b37] hover:bg-[#e9e5d9]"><X size={18}/></button>
+      </div>
      <p className="eyebrow pr-12 text-[#b46f49]">{activeStory.category} <span className="mx-2">·</span>{activeStory.date}</p>
-     <h2 id="story-title" className="font-editorial mt-5 pr-8 text-4xl leading-tight text-[#214b37] md:text-5xl">{activeStory.title}</h2>
-     <p className="mt-5 text-lg leading-8 text-[#5f6d60]">{activeStory.summary}</p>
+      <h2 id="story-title" className="font-editorial mt-3 pr-2 text-3xl leading-tight text-[#214b37] sm:text-4xl md:text-5xl">{activeStory.title}</h2>
+      <p id="story-summary" className="mt-5 text-base leading-7 text-[#5f6d60] sm:text-lg sm:leading-8">{activeStory.summary}</p>
      <div className="mt-7 space-y-5 border-t border-[#d8d2c4] pt-7 leading-7 text-[#435449]">{(activeStory.body.length?activeStory.body:[activeStory.summary]).map((paragraph,index)=><p key={index}>{paragraph}</p>)}</div>
    </article>
- </div>}
+  </div>,document.body)}
  <CTA/></>;
 }
 
