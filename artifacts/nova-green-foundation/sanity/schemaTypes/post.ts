@@ -1,6 +1,6 @@
 export const post = {
   name: "post",
-  title: "News story",
+  title: "Media Hub post",
   type: "document",
   fields: [
     {
@@ -38,6 +38,53 @@ export const post = {
       validation: (Rule: { required: () => unknown }) => Rule.required(),
     },
     {
+      name: "mediaType",
+      title: "Media type",
+      type: "string",
+      options: {
+        list: [
+          { title: "Article", value: "article" },
+          { title: "Video", value: "video" },
+          { title: "Photo", value: "photo" },
+          { title: "Podcast", value: "podcast" },
+        ],
+      },
+      initialValue: "article",
+      validation: (Rule: { required: () => unknown }) => Rule.required(),
+    },
+    {
+      name: "duration",
+      title: "Duration (videos & podcasts)",
+      type: "string",
+      description: "e.g. 4:32 or 22:10",
+      hidden: ({ parent }: { parent?: { mediaType?: string } }) =>
+        parent?.mediaType !== "video" && parent?.mediaType !== "podcast",
+    },
+    {
+      name: "videoUrl",
+      title: "Video URL",
+      type: "url",
+      description: "YouTube or Vimeo link",
+      hidden: ({ parent }: { parent?: { mediaType?: string } }) =>
+        parent?.mediaType !== "video",
+    },
+    {
+      name: "audioUrl",
+      title: "Audio URL",
+      type: "url",
+      description: "Podcast audio link or embed URL",
+      hidden: ({ parent }: { parent?: { mediaType?: string } }) =>
+        parent?.mediaType !== "podcast",
+    },
+    {
+      name: "photoCount",
+      title: "Number of photos",
+      type: "number",
+      description: "How many images in this gallery",
+      hidden: ({ parent }: { parent?: { mediaType?: string } }) =>
+        parent?.mediaType !== "photo",
+    },
+    {
       name: "publishedAt",
       title: "Publication date",
       type: "datetime",
@@ -57,6 +104,6 @@ export const post = {
     },
   ],
   preview: {
-    select: { title: "title", subtitle: "category", media: "coverImage" },
+    select: { title: "title", subtitle: "mediaType", media: "coverImage" },
   },
 };

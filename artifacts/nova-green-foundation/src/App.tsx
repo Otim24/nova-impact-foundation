@@ -1,13 +1,13 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, useMemo, type FormEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { AnimatedNumber } from '@/components/animated-number';
-import { demoStories, fetchSanityStories, sanityIsConfigured, type Story } from '@/lib/sanity';
+import { demoStories, fetchSanityStories, sanityIsConfigured, type Story, type MediaType } from '@/lib/sanity';
 import NotFound from '@/pages/not-found';
-import { ArrowDown, ArrowRight, ArrowUpRight, Menu, X, Sprout, Sun, Recycle, UsersRound, MapPin, Mail, Phone, CheckCircle2 } from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUpRight, Menu, X, Sprout, Sun, Recycle, UsersRound, MapPin, Mail, Phone, CheckCircle2, PlayCircle, Camera, Mic, Newspaper, Clock, Images } from 'lucide-react';
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaYoutube } from 'react-icons/fa';
 import {
   Route,
@@ -25,7 +25,7 @@ const navItems = [
   { label: 'Our people', href: '/board-leadership' },
   { label: 'SDG impact', href: '/sdgs-impact' },
   { label: 'Partners', href: '/partners' },
-  { label: 'News & stories', href: '/news-updates' },
+  { label: 'Media Hub', href: '/media-hub' },
 ];
 const socialProfiles = [
   { label: 'Facebook', Icon: FaFacebookF, href: import.meta.env.VITE_NOVA_FACEBOOK_URL?.trim() || '' },
@@ -39,7 +39,7 @@ const pageData: Record<string, { title: string; description: string; kicker: str
   '/board-leadership': { title: 'Leadership rooted in service.', description: 'Meet the board and leadership team guiding Nova Green Economy Foundation with accountability and community partnership.', kicker: 'Our people', lead: 'Good work takes shared leadership. Our board and team bring experience across community development, enterprise and climate action.' },
   '/sdgs-impact': { title: 'Local action. Shared progress.', description: 'See how our community-led work contributes to the Sustainable Development Goals and a fair green economy in Uganda.', kicker: 'Our impact', lead: 'Progress is more than a number. We track the change communities value and the contribution it makes to a wider global agenda.' },
   '/partners': { title: 'A transition built together.', description: 'Discover how Nova Green Economy Foundation collaborates with local organisations, public institutions and communities.', kicker: 'Work with us', lead: 'A fair transition is a collective effort. We build partnerships that share resources, knowledge and decision-making.' },
-  '/news-updates': { title: 'Stories from the transition.', description: 'Read news, field notes and stories from Nova Green Economy Foundation communities and programmes in Uganda.', kicker: 'News & updates', lead: 'Ideas and progress from the people putting a fair green economy into practice. Stories are currently illustrative while our CMS is prepared.' },
+  '/media-hub': { title: 'Stories from the transition.', description: 'Videos, photos, podcasts and news from Nova Green Economy Foundation — community-led green economy work in Uganda.', kicker: 'Media Hub', lead: 'Videos, photos, podcasts and updates from the people putting a fair green economy into practice. Content is managed through Sanity CMS.' },
   '/contact-us': { title: 'Let’s make progress together.', description: 'Contact Nova Green Economy Foundation to explore partnerships, programme enquiries and community engagement in Uganda.', kicker: 'Get in touch', lead: 'Have a question, an idea or a partnership in mind? We would be glad to hear from you.' },
 };
 
@@ -277,7 +277,7 @@ function FeaturedStory() {
   return <section className="mx-auto max-w-[1440px] px-6 py-16 md:px-10 md:py-20 xl:px-[4.5rem]">
     <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
       <div><p className="eyebrow text-[#b46f49]">Stories from the field</p><h2 className="font-editorial mt-4 text-4xl text-[#214b37] md:text-5xl">Progress, in people’s own words.</h2></div>
-      <Link href="/news-updates" className="inline-flex items-center gap-2 border-b border-[#c0784d] pb-2 text-sm font-semibold text-[#214b37]">All news & stories <ArrowUpRight size={16}/></Link>
+      <Link href="/media-hub" className="inline-flex items-center gap-2 border-b border-[#c0784d] pb-2 text-sm font-semibold text-[#214b37]">Visit Media Hub <ArrowUpRight size={16}/></Link>
     </div>
     <article className="grid overflow-hidden rounded-[1.25rem] border border-[#ded9cc] bg-[#eeece4] md:grid-cols-[1.02fr_.98fr]">
       <div className="relative min-h-[280px] overflow-hidden bg-[#d6d5c4] md:min-h-[410px]"><img src={storyImage} alt="" className="absolute inset-0 h-full w-full object-cover"/><div className="image-tint absolute inset-0"/><span className="absolute bottom-5 left-5 rounded-full border border-white/35 bg-[#183c2c]/35 px-4 py-2 text-[.65rem] font-semibold tracking-[.14em] text-white backdrop-blur-sm">COMMUNITY-LED CHANGE</span></div>
@@ -287,7 +287,7 @@ function FeaturedStory() {
         <p className="mt-5 max-w-xl leading-7 text-[#5e6b60]">{story.summary}</p>
         {storyState === 'error' && <p className="mt-4 text-xs leading-5 text-[#7a6858]">Showing sample content while the news service is unavailable.</p>}
         {storyState === 'empty' && <p className="mt-4 text-xs leading-5 text-[#7a6858]">Showing a sample story until the first article is published in Sanity.</p>}
-        <Link href="/news-updates" className="group mt-7 inline-flex w-fit items-center gap-3 text-sm font-semibold text-[#214b37]">Read the latest story <ArrowRight size={16} className="transition-transform group-hover:translate-x-1"/></Link>
+        <Link href="/media-hub" className="group mt-7 inline-flex w-fit items-center gap-3 text-sm font-semibold text-[#214b37]">Read the latest story <ArrowRight size={16} className="transition-transform group-hover:translate-x-1"/></Link>
       </div>
     </article>
   </section>;
@@ -414,16 +414,40 @@ function PartnersContent() {
  </>;
 }
 
-function NewsContent(){
- const [filter,setFilter]=useState('ALL STORIES');
+const mediaTabConfig: { key: MediaType | 'all'; label: string; Icon: typeof PlayCircle }[] = [
+  { key: 'all', label: 'All', Icon: Newspaper },
+  { key: 'video', label: 'Videos', Icon: PlayCircle },
+  { key: 'photo', label: 'Photos', Icon: Camera },
+  { key: 'podcast', label: 'Podcasts', Icon: Mic },
+  { key: 'article', label: 'News & Updates', Icon: Newspaper },
+];
+
+function MediaBadge({ type, duration, photoCount }: { type: MediaType; duration?: string; photoCount?: number }) {
+  const config: Record<MediaType, { Icon: typeof PlayCircle; label: string; color: string }> = {
+    video: { Icon: PlayCircle, label: duration ? `Video · ${duration}` : 'Video', color: 'text-[#214b37]' },
+    photo: { Icon: Images, label: photoCount ? `${photoCount} photos` : 'Photo gallery', color: 'text-[#214b37]' },
+    podcast: { Icon: Mic, label: duration ? `Podcast · ${duration}` : 'Podcast', color: 'text-[#214b37]' },
+    article: { Icon: Newspaper, label: 'Article', color: 'text-[#214b37]' },
+  };
+  const { Icon, label, color } = config[type];
+  return <span className={`inline-flex items-center gap-1.5 rounded-full border border-[#d4d0c3] bg-[#f5f2e9]/90 px-3 py-1.5 text-[.6rem] font-bold tracking-[.08em] ${color}`}><Icon size={12}/>{label.toUpperCase()}</span>;
+}
+
+function MediaHubContent(){
+ const [activeTab,setActiveTab]=useState<MediaType|'all'>('all');
+ const [filter,setFilter]=useState('ALL');
  const [stories,setStories]=useState<Story[]>(demoStories);
  const [cmsState,setCmsState]=useState<'demo'|'loading'|'live'|'empty'|'error'>(sanityIsConfigured?'loading':'demo');
  const [activeStory,setActiveStory]=useState<Story|null>(null);
  const storyDialogRef=useRef<HTMLElement|null>(null);
  const storyCloseButtonRef=useRef<HTMLButtonElement|null>(null);
  const storyTriggerRef=useRef<HTMLButtonElement|null>(null);
- const filters=['ALL STORIES',...Array.from(new Set(stories.map(s=>s.category)))];
- const shown=filter==='ALL STORIES'?stories:stories.filter(s=>s.category===filter);
+
+ const tabFiltered = useMemo(()=>activeTab==='all'?stories:stories.filter(s=>s.mediaType===activeTab),[stories,activeTab]);
+ const categories = useMemo(()=>['ALL',...Array.from(new Set(tabFiltered.map(s=>s.category)))],[tabFiltered]);
+ const shown = useMemo(()=>filter==='ALL'?tabFiltered:tabFiltered.filter(s=>s.category===filter),[tabFiltered,filter]);
+
+ useEffect(()=>{setFilter('ALL');},[activeTab]);
 
  useEffect(()=>{
    if(!sanityIsConfigured)return;
@@ -460,37 +484,87 @@ function NewsContent(){
  },[activeStory]);
 
  const statusMessage = {
-   demo:'Demo stories shown. Add Sanity project settings to load published CMS content.',
-   loading:'Connecting to Sanity. Demo stories remain visible while content loads.',
-   live:'Showing the latest published stories from Sanity CMS.',
-   empty:'Sanity is connected, but there are no published stories yet.',
-   error:'Sanity could not be reached. Showing demo stories instead.',
+   demo:'Demo content shown. Connect Sanity CMS to manage videos, photos, podcasts and articles.',
+   loading:'Connecting to Sanity CMS. Demo content remains visible while data loads.',
+   live:'Showing the latest published content from Sanity CMS.',
+   empty:'Sanity is connected, but there is no published content yet.',
+   error:'Sanity could not be reached. Showing demo content instead.',
  }[cmsState];
 
+ const tabCounts = useMemo(()=>{
+   const counts: Record<string,number> = { all: stories.length };
+   for(const s of stories) counts[s.mediaType]=(counts[s.mediaType]||0)+1;
+   return counts;
+ },[stories]);
+
+ function readLabel(s: Story): string {
+   switch(s.mediaType){
+     case 'video': return 'Watch video';
+     case 'photo': return 'View gallery';
+     case 'podcast': return 'Listen now';
+     default: return 'Read story';
+   }
+ }
+
+ function metaLine(s: Story): string {
+   const parts = [s.date];
+   if(s.mediaType==='video'&&s.duration) parts.push(s.duration);
+   else if(s.mediaType==='podcast'&&s.duration) parts.push(s.duration);
+   else if(s.mediaType==='photo'&&s.photoCount) parts.push(`${s.photoCount} photos`);
+   else parts.push('4 min read');
+   return parts.join(' · ');
+ }
+
  return <><section className="mx-auto max-w-[1440px] px-6 py-14 md:px-10 md:py-20 xl:px-[4.5rem]">
-   <div className="mb-9 flex flex-wrap gap-2" aria-label="Filter stories">{filters.map(f=><button type="button" key={f} onClick={()=>setFilter(f)} aria-pressed={filter===f} className={`rounded-full border px-4 py-2 text-[.65rem] font-semibold tracking-[.08em] transition ${filter===f?'border-[#214b37] bg-[#214b37] text-[#f7f2e7]':'border-[#d4d0c3] text-[#506154] hover:border-[#214b37]'}`}>{f}</button>)}</div>
+   {/* ── Media type tabs ── */}
+   <div className="mb-8 border-b border-[#d8d2c4]" role="tablist" aria-label="Media type">
+     <div className="flex gap-1 overflow-x-auto">
+       {mediaTabConfig.map(tab=>{
+         const isActive=activeTab===tab.key;
+         const count=tabCounts[tab.key]||0;
+         return <button key={tab.key} role="tab" type="button" aria-selected={isActive} onClick={()=>setActiveTab(tab.key)} className={`media-tab flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-[.72rem] font-semibold tracking-[.06em] transition ${isActive?'border-[#214b37] text-[#214b37]':'border-transparent text-[#7a8479] hover:text-[#214b37] hover:border-[#d4d0c3]'}`}>
+           <tab.Icon size={15} strokeWidth={1.8}/>{tab.label}
+           <span className={`rounded-full px-2 py-0.5 text-[.58rem] font-bold ${isActive?'bg-[#214b37] text-[#f7f2e7]':'bg-[#e9e5d9] text-[#637065]'}`}>{count}</span>
+         </button>;
+       })}
+     </div>
+   </div>
+
+   {/* ── Category filters ── */}
+   <div className="mb-7 flex flex-wrap gap-2" aria-label="Filter by category">{categories.map(f=><button type="button" key={f} onClick={()=>setFilter(f)} aria-pressed={filter===f} className={`rounded-full border px-4 py-2 text-[.65rem] font-semibold tracking-[.08em] transition ${filter===f?'border-[#214b37] bg-[#214b37] text-[#f7f2e7]':'border-[#d4d0c3] text-[#506154] hover:border-[#214b37]'}`}>{f}</button>)}</div>
    <p className="mb-6 rounded-lg border border-[#d8d2c4] bg-[#ece9df] px-4 py-3 text-xs text-[#5f6d60]" role="status">{statusMessage}</p>
+
+   {/* ── Content grid ── */}
    <div className="grid gap-x-7 gap-y-12 md:grid-cols-2">{shown.map((s)=><article key={s.id} className="group">
      <div className={`relative mb-5 aspect-[1.7] overflow-hidden rounded-xl ${s.imageUrl?'bg-[#d0d2c3]':'editorial-grid bg-[#e2d9c8]'}`}>
        {s.imageUrl?<img src={s.imageUrl} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"/>:<span className="font-editorial absolute bottom-5 left-6 text-6xl text-[#7c8a74]/60">N.</span>}
        <span className="absolute left-4 top-4 rounded-full bg-[#f5f2e9]/90 px-3 py-1.5 text-[.6rem] font-bold tracking-[.12em] text-[#214b37]">{s.category}</span>
+       {/* Media type indicator overlay */}
+       <div className="absolute bottom-4 right-4"><MediaBadge type={s.mediaType} duration={s.duration} photoCount={s.photoCount}/></div>
+       {s.mediaType==='video'&&<div className="absolute inset-0 flex items-center justify-center"><span className="grid h-14 w-14 place-items-center rounded-full bg-[#183c2c]/50 text-white backdrop-blur-sm transition group-hover:bg-[#183c2c]/70"><PlayCircle size={28} strokeWidth={1.4}/></span></div>}
      </div>
-     <div className="flex gap-3 text-[.67rem] uppercase tracking-[.1em] text-[#a16948]"><span>{s.date}</span><span>·</span><span>4 min read</span></div>
+     <div className="flex gap-3 text-[.67rem] uppercase tracking-[.1em] text-[#a16948]"><span>{metaLine(s)}</span></div>
      <h2 className="font-editorial mt-3 max-w-xl text-3xl leading-tight text-[#214b37]">{s.title}</h2>
      <p className="mt-3 max-w-xl leading-7 text-[#637065]">{s.summary}</p>
-      <button type="button" onClick={event=>{storyTriggerRef.current=event.currentTarget;setActiveStory(s);}} className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#214b37]">Read story <ArrowUpRight size={15}/></button>
+      <button type="button" onClick={event=>{storyTriggerRef.current=event.currentTarget;setActiveStory(s);}} className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#214b37]">{readLabel(s)} <ArrowUpRight size={15}/></button>
    </article>)}</div>
-   {shown.length===0&&cmsState!=='empty'&&<p className="py-16 text-center text-[#637065]">No stories in this category yet.</p>}
-   {cmsState==='empty'&&<p className="rounded-xl bg-[#ece9df] px-6 py-12 text-center text-[#637065]">Published Sanity stories will appear here as soon as your team adds them.</p>}
+   {shown.length===0&&cmsState!=='empty'&&<p className="py-16 text-center text-[#637065]">No content in this category yet.</p>}
+   {cmsState==='empty'&&<p className="rounded-xl bg-[#ece9df] px-6 py-12 text-center text-[#637065]">Published content will appear here as soon as your team adds items in Sanity CMS.</p>}
  </section>
   {activeStory&&createPortal(<div className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-[#14291f]/70 p-3 backdrop-blur-sm sm:p-6" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)setActiveStory(null);}}>
     <article ref={storyDialogRef} role="dialog" aria-modal="true" aria-labelledby="story-title" aria-describedby="story-summary" tabIndex={-1} className="relative max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl overflow-y-auto overscroll-contain rounded-2xl bg-[#f5f2e9] p-6 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:p-8 md:p-12">
       <div className="sticky top-0 z-10 -mx-6 -mt-6 flex justify-end bg-[#f5f2e9] px-6 pb-2 pt-4 sm:-mx-8 sm:-mt-8 sm:px-8 md:-mx-12 md:-mt-12 md:px-12 md:pt-6">
         <button ref={storyCloseButtonRef} type="button" onClick={()=>setActiveStory(null)} aria-label="Close story" className="grid h-10 w-10 place-items-center rounded-full border border-[#d4d0c3] text-[#214b37] hover:bg-[#e9e5d9]"><X size={18}/></button>
       </div>
-     <p className="eyebrow pr-12 text-[#b46f49]">{activeStory.category} <span className="mx-2">·</span>{activeStory.date}</p>
+     <div className="flex flex-wrap items-center gap-3 pr-12">
+       <p className="eyebrow text-[#b46f49]">{activeStory.category} <span className="mx-2">·</span>{activeStory.date}</p>
+       <MediaBadge type={activeStory.mediaType} duration={activeStory.duration} photoCount={activeStory.photoCount}/>
+     </div>
       <h2 id="story-title" className="font-editorial mt-3 pr-2 text-3xl leading-tight text-[#214b37] sm:text-4xl md:text-5xl">{activeStory.title}</h2>
       <p id="story-summary" className="mt-5 text-base leading-7 text-[#5f6d60] sm:text-lg sm:leading-8">{activeStory.summary}</p>
+      {activeStory.mediaType==='video'&&<div className="mt-6 flex items-center gap-3 rounded-xl border border-[#d8d2c4] bg-[#ece9df] px-5 py-4 text-sm text-[#435449]"><PlayCircle size={20} className="shrink-0 text-[#214b37]"/><span>Video playback will be available when content is published through Sanity CMS.{activeStory.duration&&` Duration: ${activeStory.duration}`}</span></div>}
+      {activeStory.mediaType==='podcast'&&<div className="mt-6 flex items-center gap-3 rounded-xl border border-[#d8d2c4] bg-[#ece9df] px-5 py-4 text-sm text-[#435449]"><Mic size={20} className="shrink-0 text-[#214b37]"/><span>Audio player will be available when content is published through Sanity CMS.{activeStory.duration&&` Duration: ${activeStory.duration}`}</span></div>}
+      {activeStory.mediaType==='photo'&&<div className="mt-6 flex items-center gap-3 rounded-xl border border-[#d8d2c4] bg-[#ece9df] px-5 py-4 text-sm text-[#435449]"><Images size={20} className="shrink-0 text-[#214b37]"/><span>Photo gallery will be available when images are uploaded through Sanity CMS.{activeStory.photoCount&&` ${activeStory.photoCount} photos in this gallery.`}</span></div>}
      <div className="mt-7 space-y-5 border-t border-[#d8d2c4] pt-7 leading-7 text-[#435449]">{(activeStory.body.length?activeStory.body:[activeStory.summary]).map((paragraph,index)=><p key={index}>{paragraph}</p>)}</div>
    </article>
   </div>,document.body)}
@@ -510,7 +584,7 @@ function InnerPage({ path }: { path: string }) {
  const data=pageData[path];
   useEffect(()=>{updatePageMetadata(`${data.title} | Nova Green Economy Foundation`,data.description);},[data]);
  let content:ReactNode;
- switch(path){case '/about-us':content=<AboutContent/>;break;case '/programmes':content=<ProgrammesContent/>;break;case '/board-leadership':content=<PeopleContent/>;break;case '/sdgs-impact':content=<ImpactContent/>;break;case '/partners':content=<PartnersContent/>;break;case '/news-updates':content=<NewsContent/>;break;default:content=<ContactContent/>;}
+ switch(path){case '/about-us':content=<AboutContent/>;break;case '/programmes':content=<ProgrammesContent/>;break;case '/board-leadership':content=<PeopleContent/>;break;case '/sdgs-impact':content=<ImpactContent/>;break;case '/partners':content=<PartnersContent/>;break;case '/media-hub':content=<MediaHubContent/>;break;default:content=<ContactContent/>;}
  return <main className="page-enter"><InnerHero path={path}/>{content}</main>;
 }
 
